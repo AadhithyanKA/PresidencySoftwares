@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>PSOD Indent Software</title>
+
+<script src="html2pdf.bundle.min.js"></script>
+
+<style>
+
+body{
+font-family:Segoe UI;
+margin:0;
+background:#f4f6f9;
+}
+
+header{
+background:#002147;
+color:white;
+padding:15px 40px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+header img{height:60px;}
+
+.container{
+max-width:1300px;
+margin:40px auto;
+background:white;
+padding:30px;
+border-radius:10px;
+box-shadow:0 6px 20px rgba(0,0,0,0.1);
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+}
+
+th{
+background:#002147;
+color:white;
+padding:10px;
+}
+
+td{
+padding:6px;
+text-align:center;
+}
+
+input,select{
+width:100%;
+padding:6px;
+border:1px solid #ccc;
+border-radius:4px;
+}
+
+button{
+padding:8px 16px;
+border:none;
+border-radius:5px;
+cursor:pointer;
+margin-top:10px;
+}
+
+.primary{background:#002147;color:white;}
+.danger{background:#d32f2f;color:white;}
+
+.remove-btn{
+background:#d32f2f;
+color:white;
+border:none;
+padding:4px 8px;
+cursor:pointer;
+}
+
+.actions{
+margin-top:20px;
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+}
+
+.total{
+margin-top:20px;
+font-size:18px;
+font-weight:bold;
+text-align:right;
+}
+
+footer{
+background:#002147;
+color:white;
+text-align:center;
+padding:20px;
+margin-top:40px;
+}
+
+.overlay{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.6);
+justify-content:center;
+align-items:center;
+}
+
+.overlay-box{
+background:white;
+padding:30px;
+border-radius:10px;
+text-align:center;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+<img src="PSOD Logo (1).png">
+<div>
+    <div>PSOD Indent Software</div>
+</div>
+<img src="LOGO_2 (1).png">
+</header>
+
+<a href="../index.html" style="position: fixed; bottom: 20px; left: 20px; z-index: 9999; background: #002147; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-family: Segoe UI, sans-serif; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 2px solid white; transition: transform 0.2s;">&larr; Back to Portal</a>
+
+<div class="container">
+
+<label>Created By</label>
+<input id="createdBy" placeholder="Enter your name">
+
+<table id="entryTable">
+<tr>
+<th>Brand</th>
+<th>Description</th>
+<th>Link</th>
+<th>Type</th>
+<th>Department</th>
+<th>Qty</th>
+<th>Cost</th>
+<th>Amount</th>
+<th>Action</th>
+</tr>
+</table>
+
+<div class="actions">
+<button class="primary" onclick="addRow()">Add Row</button>
+<button class="primary" onclick="saveIndent()">Save (.indent)</button>
+<input type="file" accept=".indent" onchange="loadIndent(event)">
+<button class="primary" onclick="openOverlay()">Submit</button>
+</div>
+
+<div class="total">
+Grand Total ₹ <span id="grandTotal">0</span><br>
+<span id="grandWords">Zero Only</span>
+</div>
+
+</div>
+
+<footer>
+Presidency University <br>
+Designed and Developed by Aadhithyan K A
+</footer>
+
+<!-- PDF TEMPLATE -->
+
+<div id="pdfTemplate" style="display:none;font-family:Arial;padding:30px;">
+
+<div style="display:flex;justify-content:space-between;">
+<img src="PSOD Logo (1).png" height="60">
+<img src="LOGO_2 (1).png" height="60">
+</div>
+
+<h3 style="text-align:center;">PSOD INDENT</h3>
+
+<p><b>Created By:</b> <span id="pdfUser"></span></p>
+<p><b>Date:</b> <span id="pdfDate"></span></p>
+
+<table border="1" style="width:100%;border-collapse:collapse;margin-top:20px;">
+<thead>
+<tr>
+<th>SL</th>
+<th>Brand</th>
+<th>Description</th>
+<th>Link</th>
+<th>Type</th>
+<th>Department</th>
+<th>Qty</th>
+<th>Cost</th>
+<th>Amount</th>
+</tr>
+</thead>
+
+<tbody id="pdfTable"></tbody>
+
+</table>
+
+<h3 style="text-align:right;">
+Grand Total ₹ <span id="pdfTotal"></span>
+</h3>
+
+<p><b>In Words:</b> <span id="pdfWords"></span></p>
+
+<div style="margin-top:80px;display:flex;justify-content:space-between;">
+<div>
+______________________ <br>
+HoD Sign
+</div>
+
+<div>
+______________________ <br>
+IC Sign
+</div>
+</div>
+
+<p style="text-align:center;margin-top:40px;">
+School of Design || Presidency University
+</p>
+
+</div>
+
+<!-- CONFIRM -->
+
+<div class="overlay" id="confirmOverlay">
+<div class="overlay-box">
+<h3>Are you sure you want to submit?</h3>
+<button class="primary" onclick="generatePreview()">Yes</button>
+<button class="danger" onclick="closeOverlay()">Cancel</button>
+</div>
+</div>
+
+<div class="overlay" id="previewOverlay" style="display:none;z-index:1000;">
+    <div class="overlay-box" style="width: 210mm; max-width: 90%; max-height: 90vh; overflow-y: auto; padding: 20px;">
+        <div id="previewContent" style="background: white; padding: 20px; text-align: left;">
+            <!-- Content will be injected here -->
+        </div>
+        <div style="margin-top: 20px; text-align: center;">
+            <button class="primary" onclick="downloadPDF()">Download PDF</button>
+            <button class="danger" onclick="closePreview()">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+
+function addRow(){
+
+const row=document.getElementById("entryTable").insertRow();
+
+row.innerHTML=`
+<td><input></td>
+<td><input></td>
+<td><input></td>
+<td>
+<select>
+<option>Equipment</option>
+<option>Software</option>
+<option>Consumables</option>
+</select>
+</td>
+<td>
+<select>
+<option>GD</option>
+<option>FD</option>
+<option>CD</option>
+<option>SD</option>
+<option>PD</option>
+<option>Foundation</option>
+<option>Multimedia</option>
+</select>
+</td>
+<td><input type="number" oninput="calculate(this)"></td>
+<td><input type="number" oninput="calculate(this)"></td>
+<td><input readonly></td>
+<td><button class="remove-btn" onclick="removeRow(this)">X</button></td>
+`;
+
+}
+
+function removeRow(btn){
+btn.closest("tr").remove();
+updateTotal();
+}
+
+function calculate(input){
+
+const row=input.closest("tr");
+
+const qty=row.cells[5].querySelector("input").value||0;
+const cost=row.cells[6].querySelector("input").value||0;
+
+row.cells[7].querySelector("input").value=qty*cost;
+
+updateTotal();
+
+}
+
+function updateTotal(){
+
+let total=0;
+
+document.querySelectorAll("#entryTable tr").forEach((row,i)=>{
+
+if(i>0){
+total+=Number(row.cells[7].querySelector("input").value)||0;
+}
+
+});
+
+document.getElementById("grandTotal").innerText=total.toLocaleString("en-IN");
+document.getElementById("grandWords").innerText=numberToWords(total);
+
+}
+
+function numberToWords(num){
+
+if(num==0) return "Zero Only";
+
+const a=["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten",
+"Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen",
+"Eighteen","Nineteen"];
+
+const b=["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
+
+function convert(n){
+
+if(n<20) return a[n];
+
+if(n<100) return b[Math.floor(n/10)]+" "+a[n%10];
+
+if(n<1000) return a[Math.floor(n/100)]+" Hundred "+convert(n%100);
+
+}
+
+let result="";
+
+if(num>=10000000){
+result+=convert(Math.floor(num/10000000))+" Crore ";
+num%=10000000;
+}
+
+if(num>=100000){
+result+=convert(Math.floor(num/100000))+" Lakh ";
+num%=100000;
+}
+
+if(num>=1000){
+result+=convert(Math.floor(num/1000))+" Thousand ";
+num%=1000;
+}
+
+if(num>0){
+result+=convert(num);
+}
+
+return result+" Only";
+
+}
+
+function saveIndent(){
+
+const rows=document.querySelectorAll("#entryTable tr");
+const entries=[];
+
+for(let i=1;i<rows.length;i++){
+
+const inputs=rows[i].querySelectorAll("input,select");
+
+entries.push({
+
+brand:inputs[0].value,
+description:inputs[1].value,
+link:inputs[2].value,
+type:inputs[3].value,
+department:inputs[4].value,
+quantity:inputs[5].value,
+cost:inputs[6].value,
+amount:inputs[7].value
+
+});
+
+}
+
+const data={
+createdBy:document.getElementById("createdBy").value,
+entries:entries
+};
+
+const blob=new Blob([JSON.stringify(data)],{type:"application/json"});
+
+const link=document.createElement("a");
+link.href=URL.createObjectURL(blob);
+link.download="PSOD.indent";
+link.click();
+
+}
+
+function loadIndent(event){
+
+const file=event.target.files[0];
+const reader=new FileReader();
+
+reader.onload=function(e){
+
+const data=JSON.parse(e.target.result);
+
+document.getElementById("createdBy").value=data.createdBy;
+
+const table=document.getElementById("entryTable");
+
+while(table.rows.length>1) table.deleteRow(1);
+
+data.entries.forEach(entry=>{
+
+addRow();
+
+const row=table.rows[table.rows.length-1];
+
+const inputs=row.querySelectorAll("input,select");
+
+inputs[0].value=entry.brand;
+inputs[1].value=entry.description;
+inputs[2].value=entry.link;
+inputs[3].value=entry.type;
+inputs[4].value=entry.department;
+inputs[5].value=entry.quantity;
+inputs[6].value=entry.cost;
+inputs[7].value=entry.amount;
+
+});
+
+updateTotal();
+
+};
+
+reader.readAsText(file);
+
+}
+
+function openOverlay(){
+document.getElementById("confirmOverlay").style.display="flex";
+}
+
+function closeOverlay(){
+document.getElementById("confirmOverlay").style.display="none";
+}
+
+function closePreview(){
+    document.getElementById("previewOverlay").style.display="none";
+}
+
+function generatePreview(){
+
+closeOverlay();
+saveIndent();
+
+const rows=document.querySelectorAll("#entryTable tr");
+const previewContent = document.getElementById("previewContent");
+
+let total=0;
+let tableRowsHTML = '';
+
+rows.forEach((row,i)=>{
+    if(i>0){
+        const inputs=row.querySelectorAll("input,select");
+        const amount=Number(inputs[7].value)||0;
+        total+=amount;
+        
+        tableRowsHTML += `
+        <tr>
+            <td style="padding:5px;text-align:center;">${i}</td>
+            <td style="padding:5px;text-align:center;">${inputs[0].value}</td>
+            <td style="padding:5px;text-align:center;">${inputs[1].value}</td>
+            <td style="padding:5px;text-align:center;">${inputs[2].value}</td>
+            <td style="padding:5px;text-align:center;">${inputs[3].value}</td>
+            <td style="padding:5px;text-align:center;">${inputs[4].value}</td>
+            <td style="padding:5px;text-align:center;">${inputs[5].value}</td>
+            <td style="padding:5px;text-align:center;">${inputs[6].value}</td>
+            <td style="padding:5px;text-align:center;">${inputs[7].value}</td>
+        </tr>
+        `;
+    }
+});
+
+const userName = document.getElementById("createdBy").value;
+const dateStr = new Date().toLocaleDateString();
+const totalStr = total.toLocaleString("en-IN");
+const wordsStr = numberToWords(total);
+
+previewContent.innerHTML = `
+    <div style="font-family: Arial, sans-serif; width: 100%;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <img src="PSOD Logo (1).png" style="height:60px;">
+            <img src="LOGO_2 (1).png" style="height:60px;">
+        </div>
+
+        <h3 style="text-align:center;margin-bottom:20px;">PSOD INDENT</h3>
+
+        <p><b>Created By:</b> ${userName}</p>
+        <p><b>Date:</b> ${dateStr}</p>
+
+        <table border="1" style="width:100%;border-collapse:collapse;margin-top:20px;font-size:12px;">
+            <thead>
+                <tr style="background:#002147;color:white;">
+                    <th style="padding:8px;">SL</th>
+                    <th style="padding:8px;">Brand</th>
+                    <th style="padding:8px;">Description</th>
+                    <th style="padding:8px;">Link</th>
+                    <th style="padding:8px;">Type</th>
+                    <th style="padding:8px;">Department</th>
+                    <th style="padding:8px;">Qty</th>
+                    <th style="padding:8px;">Cost</th>
+                    <th style="padding:8px;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${tableRowsHTML}
+            </tbody>
+        </table>
+
+        <h3 style="text-align:right;margin-top:20px;">
+            Grand Total ₹ ${totalStr}
+        </h3>
+
+        <p><b>In Words:</b> ${wordsStr}</p>
+
+        <div style="margin-top:80px;display:flex;justify-content:space-between;">
+            <div style="text-align:center;">
+                ______________________ <br>
+                HoD Sign
+            </div>
+
+            <div style="text-align:center;">
+                ______________________ <br>
+                IC Sign
+            </div>
+        </div>
+
+        <p style="text-align:center;margin-top:40px;font-size:12px;color:#666;">
+            School of Design || Presidency University
+        </p>
+    </div>
+`;
+
+// Show the preview overlay
+document.getElementById("previewOverlay").style.display="flex";
+
+}
+
+function downloadPDF(){
+    const element = document.getElementById('previewContent');
+    const opt = {
+        margin: 10,
+        filename: 'PSOD_Indent.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save();
+}
+
+</script>
+
+</body>
+</html>
